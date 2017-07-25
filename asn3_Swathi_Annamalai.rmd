@@ -1,0 +1,137 @@
+---
+title: "asn3_Swathi_Annamalai"
+author: "Swathi Annamalai"
+date: "4/4/2017"
+output: html_document
+
+---
+PROBLEM 1: The U.S. Government Department of Labor, Bureau of Labor Statistics (BLS) publishes a Local Area Unemployent Report. File has local area unemployment statistics for the San Francisco-Oakland-Hayward California Metropolitan Statistical Area (MSA) for the years 1990 - 2016.
+Tidyverse packages used to generate an HTML file from RMarkdown with four
+separate ggplot line plots (including points) of the following:
+1. Employment (numbers)
+2. Labor Force (numbers)
+3. Unemploment Rate (rate)
+4. Unemployment (numbers)
+
+
+Reading the SF OAKLAND METRO dataset
+```{r}
+library(tidyverse)
+sf_oak_df <- read_csv('sf_oak_metro.csv')
+head(sf_oak_df)
+```
+Transpose the dataset in order to format the data by year on X-Axis and Values on Y-Axis.
+Adding Column Names based on Measure Codes: 
+measure_code	measure_text
+03	unemployment rate	
+04	unemployment	
+05	employment	
+06	labor force	
+```{r}
+new_sf_df <- data.frame(t(sf_oak_df))
+names(new_sf_df) = c("Unemployment Rate(numbers)","Unemployment (numbers)","Employment (numbers)","Labor Force (numbers)")
+head(new_sf_df)
+```
+Eliminating first row of Series ID as we have replaced column names for Series ID in previous step
+```{r}
+new_sf_df <- new_sf_df[-1,]
+head(new_sf_df)
+```
+
+Adding Column Date as first row first column value to this data frame, creating a new data frame for this processing
+```{r}
+df_new <- new_sf_df
+df_new <- cbind(rownames(df_new),df_new)
+rownames(df_new) <- NULL
+colnames(df_new) <- c("Date","Unemployment Rate(numbers)","Unemployment (numbers)","Employment (numbers)","Labor Force (numbers)")
+glimpse(df_new)
+```
+Adding new column newDate which formats old Date to new Date format --> from integer to Date format
+```{r}
+df_new$newDate <- parse_date(df_new$Date,"%b %Y")
+glimpse(df_new)
+```
+Copying this data over into a new dataframe and creating an additional column "month" to extract the month part from the newDate field created above. The month field is used to plot data on ggplot in steps following this code, Month is plotted on X-axis with values on Y-axis.
+```{r}
+df_final <- df_new
+df_final <- cbind(df_final,date = df_new$newDate, year = as.numeric(format(df_new$newDate,format = "%Y")),month = as.numeric(format(df_new$newDate,format = "%m")))
+glimpse(df_final)
+```
+Plot Unemployement Rate(numbers) using ggplot for data derived above
+```{r}
+df_final$UnempRate <- as.numeric(as.character(df_final$`Unemployment Rate(numbers)`))
+ggplot(df_final, aes(df_final$month, df_final$UnempRate, group = df_final$year, color = factor(year))) + geom_line() + scale_x_continuous(breaks = 1:12, labels = c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) + labs(x = "Months", y = "Values", title = "Unemployment Rate (numbers): SF-Oakland-Hayward CA Metropolitical Statistical Area") + scale_y_continuous(limits = c(2,10.5))
+```
+Plot Unemployment Numbers using ggplot for data in df_final. First create a new variable newUnempNos which converts factor to numeric in order to scale and plot the Yaxis values. The min and max values for Y-axis is determined by finding the min and max values from the raw dataset in order to set the scale.
+```{r}
+df_final$newUnempNos <- as.numeric(as.character(df_final$`Unemployment (numbers)`))
+ ggplot(df_final, aes(df_final$month, df_final$newUnempNos, group = df_final$year, color = factor(year))) + geom_line()  + scale_x_continuous(breaks = 1:12, labels = c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) + labs(x = "Months", y = "Values", title = "Unemp Numbers: SF-Oakland-Hayward CA Metropolitical Statistical Area") + scale_y_continuous(limits = c(49000,260000))
+
+```
+Plot Employment Numbers using ggplot for data in df_final. First create a new variable NewEmp which converts factor to numeric in order to scale and plot the Yaxis values. The min and max values for Y-axis is determined by finding the min and max values from the raw dataset in order to set the scale.
+```{r}
+df_final$NewEmp <- as.numeric(as.character(df_final$`Employment (numbers)`))
+ ggplot(df_final, aes(df_final$month, df_final$NewEmp, group = df_final$year, color = factor(year))) + geom_line()  + scale_x_continuous(breaks = 1:12, labels = c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) + labs(x = "Months", y = "Values", title = "Employment Nos: SF-Oakland-Hayward CA Metropolitical Statistical Area") + scale_y_continuous(limits = c(1800000,2600000))
+```
+Plot Labor Force using ggplot for data in df_final. First create a new variable NewUnemp1 which converts factor to numeric in order to scale and plot the Yaxis values. The min and max values for Y-axis is determined by finding the min and max values from the raw dataset in order to set the scale.
+```{r}
+df_final$NewUnemp1 <- as.numeric(as.character(df_final$`Labor Force (numbers)`))
+ggplot(df_final, aes(df_final$month, df_final$NewUnemp1, group = df_final$year, color = factor(year))) + geom_line()  + scale_x_continuous(breaks = 1:12, labels = c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")) + labs(x = "Months", y = "Values", title = "Labor Force: SF-Oakland-Hayward CA Metropolitical Statistical Area") + scale_y_continuous(limits = c(1900000,2600000))
+```
+OBSERVATIONS from Problem1: 
+Unemployment Rate (numbers): 2009 and 2010 had the highest unemployment rate whereas 1999 and 1998 had the lowest unemployment rates. We can see this in unison with the market crash in 2007/2008 and the market being exceptionally good in 2009/ 2010. The unemp rates tend to spike up in July of all years and theres a dip in the unemp rate in months of April and May.
+Unemployment Numbers similarly match the Unemp rates pattern where July sees an increase in unemployment and it has a downward trend towards the end of every year except for the year 2007 where unemployment went up towards the the end of the year - as it was the last market crash.
+Employment Numbers and Labor Force- have been relatively steady throughout the years, where the labor force and number of people wanting employment and being employed have increased over the period of each passing year.There is a gradual increase in employment during the time frame of each year with gradual spike in May, July and Sept months in a year.
+
+
+
+PROBLEM 2: MVP Submission
+1. A leaflet choropleth map showing the unemployment rates (only, with legend) for all California counties for December 2016 in this HTML report
+
+
+```{r}
+library(tidyjson)
+library(tidyverse)
+library(geojsonio)
+library(spdplyr)
+library(leaflet)
+library(plyr)
+
+sf <- geojsonio::geojson_read("gz_2010_us_050_00_20m.json", what = "sp")
+ca <- read_tsv("california_counties_monthly_employment_2016.tsv")
+#Filtering data for Dec 2016 data
+dec <- filter(ca, period == "2016-12-01")  
+#Filtering subset of data for CA state with STATE CODE = 06
+subshape <- sf[substring(sf$STATE,1,2) == "06",]
+
+#Creating fips column as unique id in sub shape sf data
+subshape@data <- transform(subshape@data, fips=paste(STATE, COUNTY, sep=""))
+finalmerge <- merge (subshape,dec,by="fips")
+m <- leaflet(finalmerge) %>% addTiles()
+
+pal <- colorBin("Blues", domain = finalmerge$unemployed_rate, n = 5)
+
+# Adding popups which displays County Name and Unemployed rate upon clicking on indiidual counties
+popup <- paste0("<strong>County : </strong>", 
+                      finalmerge$NAME, 
+                      "<br><strong>UER_Dec2016 : </strong>", 
+                      finalmerge$unemployed_rate)
+
+m %>% addPolygons(
+    fillColor = ~pal(finalmerge$unemployed_rate),
+    weight = 1,
+    opacity = 1,
+    color = "black",
+    dashArray = "2",
+    fillOpacity = 1,
+    popup = popup) %>% addLegend("bottomright", pal = pal, values = ~unemployed_rate,
+				title = "Unemp Rate%", opacity = 1)
+
+```
+
+2. A Shiny app that allows the user to choose the month (in a dropdown) for which to display the above choropleth map - ui.R and sever.R attached 
+Interactive Map which allows you to choose different months for year 2016. Default is set at Jan. You can click on individual counties to see pop up values for County Name and Unemp. Rate %.
+One example: County = MODOC in Jan = 10.3 and in May = 6.7
+ShinyIO app online URL - https://swatkat.shinyapps.io/unemployment_rate_-_ca/
+
+
